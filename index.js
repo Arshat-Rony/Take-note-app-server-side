@@ -5,6 +5,8 @@ const ObjectId = require("mongodb").ObjectId;
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const app = express()
 const port = process.env.PORT || 5000;
+var distDir = __dirname + "/dist/";
+app.use(express.static(distDir));
 
 // middlewareWrapper
 app.use(cors())
