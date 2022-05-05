@@ -47,6 +47,22 @@ async function run() {
             const result = await notesCollection.findOne(query)
             res.send(result)
         })
+
+        app.put('/notes/:id', async (req, res) => {
+            const id = req.params.id;
+            const doc = req.body;
+            const query = { _id: ObjectId(id) }
+            const options = { upsert: true }
+            const updatedDoc = {
+                $set: {
+                    title: doc.title,
+                    message: doc.message,
+                    color: doc.color,
+                }
+            }
+            const result = await notesCollection.updateOne(query, updatedDoc, options)
+            res.send(result)
+        })
         app.delete("/notes/:id", async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) }
