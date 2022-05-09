@@ -1,5 +1,6 @@
 const express = require('express')
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 require('dotenv').config()
 const ObjectId = require("mongodb").ObjectId;
 const { MongoClient, ServerApiVersion } = require('mongodb');
@@ -14,6 +15,24 @@ app.use(express.json())
 
 
 
+const verifyJWT = (req, res, jwt) => {
+    const authHeader = req.headers.authHeader;
+    if (!authHeader) {
+        res.status(401).send({ message: "Unauthorizede" })
+    }
+    else {
+        const token = authHeader.split(' ')[1]
+        jwt.verify(token, process.env.ACCESS_TOKEN, (err, decode) => {
+            if (error) {
+                res.status(403).send({ message: "Forbidden" })
+            } else {
+                req.decode = decode;
+                next()
+            }
+        })
+    }
+}
+
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ssyph.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -23,6 +42,18 @@ async function run() {
     try {
         await client.connect()
         const notesCollection = client.db("notes-app").collection("notes")
+
+        // auth 
+        app.post("/login", (req, res) => {
+            const email = req.body.email;
+            const pass = req.body.pass;
+            const accesstoken = jwt.sign({ email: email }, process.env.ACCESS_TOKEN, {
+                expiresIn: '1h'
+            });
+            res.send({ acccesstoken: accesstoken })
+
+        })
+
         app.post("/notes", async (req, res) => {
             const user = req.body;
             const doc = {
@@ -35,7 +66,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get("/notes", async (req, res) => {
+        app.get("/notes", verifyJWT, async (req, res) => {
             const email = req.query.email;
             const query = { email: email }
             const cursor = notesCollection.find(query)
